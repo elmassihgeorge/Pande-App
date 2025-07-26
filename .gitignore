@@ -71,6 +71,7 @@ Thumbs.db
 *.tdf
 test_data/
 sample_tournaments/
+tournament_analyzer_settings.json
 
 # Temporary files
 *.tmp

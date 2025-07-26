@@ -7,12 +7,14 @@ import glob
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import threading
+import json
 
 class TournamentAttendanceGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Tournament Attendance Analyzer")
         self.root.geometry("600x500")
+        self.config_file = "tournament_analyzer_settings.json"
         
         self.folder_path = tk.StringVar()
         self.file_pattern = tk.StringVar(value="*.tdf")
@@ -22,7 +24,11 @@ class TournamentAttendanceGUI:
         self.custom_output_path = tk.StringVar()
         self.output_location = tk.StringVar(value="Same as tournament files folder")
         
+        self.load_settings()
         self.setup_gui()
+        
+        # Save settings when window is closed
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
     
     def setup_gui(self):
         main_frame = ttk.Frame(self.root, padding="10")
@@ -97,12 +103,53 @@ class TournamentAttendanceGUI:
         log_frame.columnconfigure(0, weight=1)
         log_frame.rowconfigure(0, weight=1)
     
+    def load_settings(self):
+        try:
+            if os.path.exists(self.config_file):
+                with open(self.config_file, 'r') as f:
+                    settings = json.load(f)
+                
+                self.folder_path.set(settings.get('last_folder', ''))
+                self.file_pattern.set(settings.get('file_pattern', '*.tdf'))
+                self.target_month.set(settings.get('target_month', 'All'))
+                self.target_year.set(settings.get('target_year', 'All'))
+                
+                custom_path = settings.get('last_output_location', '')
+                if custom_path:
+                    self.custom_output_path.set(custom_path)
+                    self.output_location.set(f"Custom location: {os.path.dirname(custom_path)}")
+                    
+        except Exception as e:
+            pass  # If settings can't be loaded, use defaults
+    
+    def save_settings(self):
+        try:
+            settings = {
+                'last_folder': self.folder_path.get(),
+                'file_pattern': self.file_pattern.get(),
+                'target_month': self.target_month.get(),
+                'target_year': self.target_year.get(),
+                'last_output_location': self.custom_output_path.get()
+            }
+            
+            with open(self.config_file, 'w') as f:
+                json.dump(settings, f, indent=2)
+                
+        except Exception as e:
+            pass  # If settings can't be saved, continue normally
+    
+    def on_closing(self):
+        self.save_settings()
+        self.root.destroy()
+    
     def browse_folder(self):
-        folder = filedialog.askdirectory()
+        initial_dir = self.folder_path.get() if self.folder_path.get() else os.path.expanduser("~")
+        folder = filedialog.askdirectory(initialdir=initial_dir)
         if folder:
             self.folder_path.set(folder)
             self.update_filename()
             self.log(f"Selected folder: {folder}")
+            self.save_settings()
             
     def log(self, message):
         self.log_text.insert(tk.END, f"{datetime.now().strftime('%H:%M:%S')} - {message}\n")
@@ -136,11 +183,21 @@ class TournamentAttendanceGUI:
     
     def choose_output_location(self):
         try:
+            # Use last custom path or default to current folder
+            initial_dir = ""
+            if self.custom_output_path.get():
+                initial_dir = os.path.dirname(self.custom_output_path.get())
+            elif self.folder_path.get():
+                initial_dir = self.folder_path.get()
+            else:
+                initial_dir = os.path.expanduser("~")
+                
             filename = filedialog.asksaveasfilename(
                 title="Choose where to save the attendance report",
                 defaultextension=".csv",
                 filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
-                initialfile=self.output_filename.get()
+                initialfile=self.output_filename.get(),
+                initialdir=initial_dir
             )
             if filename:
                 self.custom_output_path.set(filename)
@@ -148,6 +205,7 @@ class TournamentAttendanceGUI:
                 directory = os.path.dirname(filename)
                 self.output_location.set(f"Custom location: {directory}")
                 self.log(f"Output location changed to: {filename}")
+                self.save_settings()
             else:
                 self.log("Output location selection cancelled")
         except Exception as e:
