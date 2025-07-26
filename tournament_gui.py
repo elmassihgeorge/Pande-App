@@ -217,6 +217,10 @@ class TournamentAttendanceGUI:
         try:
             if not file_path.lower().endswith(('.xml', '.tdf')):
                 return False
+            
+            # Skip files with "prerelease" in the filename
+            if "prerelease" in os.path.basename(file_path).lower():
+                return False
                 
             tree = ET.parse(file_path)
             root = tree.getroot()
