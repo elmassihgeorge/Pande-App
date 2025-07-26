@@ -1,0 +1,14 @@
+# Tournament Attendance Analyzer Requirements
+# This application uses only Python standard library modules
+# No additional packages need to be installed
+
+# Python 3.6+ required for:
+# - tkinter (GUI framework)
+# - xml.etree.ElementTree (XML parsing)
+# - csv (CSV file handling)
+# - datetime (date processing)
+# - collections (defaultdict)
+# - os, glob (file operations)
+# - threading (background processing)
+
+# All modules are included with Python standard installation
